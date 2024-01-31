@@ -159,7 +159,7 @@ function extractBTHomeData(payload) {
        }
        extractedData[ datatypes[i][4] ] = value * factor;
        index += byteSize;
-     } else { index = 10;}
+     } else { index = payload.length;}
     }
 
     return extractedData;
