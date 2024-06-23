@@ -78,7 +78,7 @@ function buildMQTTStateCmdTopics(hatype, topic) {
 /**
  * @param {boolean} sw_state
  */
-function switchActivate(sw_state) {
+function switchActivate0(sw_state) {
   Shelly.call("Switch.Set", {
     id: 0,
     on: sw_state,
@@ -86,12 +86,28 @@ function switchActivate(sw_state) {
 }
 
 /**
+ * @param {boolean} sw_state
+ */
+function switchActivate1(sw_state) {
+  Shelly.call("Switch.Set", {
+    id: 1,
+    on: sw_state,
+  });
+}
+
+
+/**
  * @param {string} topic
  * @param {string} message
  */
-function MQTTCmdListener(topic, message) {
+function MQTTCmdListener0(topic, message) {
   let _sw_state = message === "on" ? true : false;
-  switchActivate(_sw_state);
+  	switchActivate0(_sw_state);
+}
+
+function MQTTCmdListener1(topic, message) {
+    let _sw_state = message === "on" ? true : false;
+    	switchActivate1(_sw_state);
 }
 
 Shelly.addStatusHandler(function (notification) {
@@ -104,6 +120,16 @@ Shelly.addStatusHandler(function (notification) {
     if (typeof notification.delta.state === "undefined") return;
     let _state_str = notification.delta.state ? "on" : "off";
     MQTT.publish(buildMQTTStateCmdTopics("input/0"), _state_str);
+  }
+  if (notification.component === "switch:1") {
+    if (typeof notification.delta.output === "undefined") return;
+    let _state_str = notification.delta.output ? "on" : "off";
+    MQTT.publish(buildMQTTStateCmdTopics("relay/1"), _state_str);
+  }
+  if (notification.component === "input:1") {
+    if (typeof notification.delta.state === "undefined") return;
+    let _state_str = notification.delta.state ? "on" : "off";
+    MQTT.publish(buildMQTTStateCmdTopics("input/1"), _state_str);
   }
 });
 
@@ -123,7 +149,7 @@ if (CONFIG.update_period > 0)
 function initMQTT() {
   MQTT.subscribe(
     buildMQTTStateCmdTopics("relay/0", "command"),
-    MQTTCmdListener
+    MQTTCmdListener0
   );
   let _devname = "relay-0";
   MQTT.publish(
@@ -168,6 +194,58 @@ function initMQTT() {
     0,
     true
   );
+ 
+   MQTT.subscribe(
+    buildMQTTStateCmdTopics("relay/1", "command"),
+    MQTTCmdListener1
+  );
+  let _devname = "relay-1";
+  MQTT.publish(
+    buildMQTTConfigTopic("switch", _devname),
+    JSON.stringify({
+      name: CONFIG.device_name + "-" + _devname,
+      device: {
+        name: CONFIG.device_name + "-" + _devname,
+        ids: CONFIG.shelly_id + "-" + _devname,
+        mdl: CONFIG.shelly_model,
+        mf: "Allterco",
+        sw_version: CONFIG.shelly_fw_id,
+      },
+      unique_id: CONFIG.shelly_mac + "-" + _devname,
+      pl_on: CONFIG.payloads.on,
+      pl_off: CONFIG.payloads.off,
+      cmd_t: "~/command",
+      stat_t: "~",
+      "~": buildMQTTStateCmdTopics("relay/1"),
+    }),
+    0,
+    true
+  );
+  _devname = "input-1";
+  MQTT.publish(
+    buildMQTTConfigTopic("binary_sensor", _devname),
+    JSON.stringify({
+      name: CONFIG.device_name + "-" + _devname,
+      device: {
+        name: CONFIG.device_name + "-" + _devname,
+        ids: CONFIG.shelly_id + "-" + _devname,
+        mdl: CONFIG.shelly_model,
+        mf: "Allterco",
+        sw_version: CONFIG.shelly_fw_id,
+      },
+      unique_id: CONFIG.shelly_mac + "-" + _devname,
+      pl_on: CONFIG.payloads.on,
+      pl_off: CONFIG.payloads.off,
+      stat_t: "~",
+      "~": buildMQTTStateCmdTopics("input/1"),
+    }),
+    0,
+    true
+  );
+
+ 
+ 
+ 
   _devname = "temperature";
   MQTT.publish(
     buildMQTTConfigTopic("sensor", _devname),
